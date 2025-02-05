@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayerMotion Script</title>
+    
+    <!-- Prism.js 스타일 및 라이브러리 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            padding: 20px;
+        }
+        pre {
+            border-radius: 8px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Player.cs</h2>
+
+    <pre><code class="language-csharp">
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+/// <summary>
+/// Player Motion 담당 스크립트
+/// </summary>
+public class PlayerMotion : MonoBehaviour, IPlayerControlModule
+{
+    public enum AnimationMotion
+    {
+        Idle,
+        Walk,
+        Run,
+        Dash,
+        Attack,
+        Death
+    };
+
+    //모션 변경 이벤트
+    public event Action<AnimationMotion> OnMotionChanged; 
+
+    private AnimationMotion _currentMotion = AnimationMotion.Idle;
+    
+    public AnimationMotion CurrentMotion
+    {
+        get => _currentMotion;
+        private set
+        {
+            if(_currentMotion == value) return;
+            _currentMotion = value;
+            OnMotionChanged?.Invoke(_currentMotion);
+        }
+    }
+
+    private Vector2 _movementInput;
+    private bool _isRunning;
+    private bool _isDashing;
+    private bool _isAttacking;
+    private bool _isDeath = false;
+
+    private void OnEnable()
+    {
+        InputHandler.Instance.OnMovementInput += HandleMovementInput;
+        InputHandler.Instance.OnRunInput += HandleRunInput;
+        InputHandler.Instance.OnDashInput += HandleDashInput;
+        InputHandler.Instance.OnAttackInput += HandleAttackInput;
+        StatusManager.Instance.PlayerHP0 += IsPlayerDie;
+    }
+
+    private void OnDisable()
+    {
+        InputHandler.Instance.OnMovementInput -= HandleMovementInput;
+        InputHandler.Instance.OnRunInput -= HandleRunInput;
+        InputHandler.Instance.OnDashInput -= HandleDashInput;
+        InputHandler.Instance.OnAttackInput -= HandleAttackInput;
+        StatusManager.Instance.PlayerHP0 -= IsPlayerDie;
+    }
+
+    public void UpdateControl()
+    {
+        // Motion 로직
+        if(_isDeath)
+        {
+            CurrentMotion = AnimationMotion.Death;
+        }
+        else
+        {
+            if (_isAttacking) CurrentMotion = AnimationMotion.Attack;
+            else if (_isDashing) CurrentMotion = AnimationMotion.Dash;
+            else if (_movementInput.magnitude > 0) CurrentMotion = _isRunning ? AnimationMotion.Run : AnimationMotion.Walk;
+            else CurrentMotion = AnimationMotion.Idle;
+        }
+    }
+
+    private void HandleMovementInput(Vector2 input) => _movementInput = input;
+
+    private void HandleRunInput(bool isRunning) => _isRunning = isRunning;
+
+    private void HandleDashInput()
+    {
+        _isDashing = true;
+        StartCoroutine(ResetDash());
+    }
+
+    private void HandleAttackInput(bool isAttacking) => _isAttacking = isAttacking;
+
+    private void IsPlayerDie(bool isDie)
+    {
+        _isDeath = isDie;
+    }
+
+    private IEnumerator ResetDash()
+    {
+        yield return new WaitForSeconds(0.5f);
+        _isDashing = false;
+    }
+}
+
+
+          </code></pre>
+
+</body>
+</html>
