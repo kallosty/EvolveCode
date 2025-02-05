@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Script</title> //스크립트 이름
+    
+    <!-- Prism.js 스타일 및 라이브러리 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            padding: 20px;
+        }
+        pre {
+            border-radius: 8px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Player.cs</h2>
+
+    <pre><code class="language-csharp">
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerDirection : MonoBehaviour, IPlayerControlModule
+{
+    [SerializeField] private Transform _PlayerDirectionIndicator;
+    [SerializeField] private float _intevalCoroutineTime = 0.2f;
+
+    public event Action<float> OnUpdateDirection;
+
+    private Vector3 _currentDirection;
+    private Coroutine _updateDirectionCoroutine;
+    private Vector3 _currentMovement = Vector3.zero;
+
+    //TODO: 기능 구현으로 잠시 public으로 둠, 나중에는 private으로 교체 예정
+    public float IndicatorRotation;
+
+    private void OnEnable()
+    {
+        InputHandler.Instance.OnMovementInput += CurrentDirection;
+    }
+
+    private void OnDisable()
+    {
+        InputHandler.Instance.OnMovementInput -= CurrentDirection;
+    }
+
+    public void UpdateControl() {
+        PlayerDirectionCoroutine();
+    }
+
+    /// <summary>
+    /// 플레이어 대기 상태에서 너무 빠른 입력 값 변화에 대응하기 위해 만듬.
+    /// 방향을 코루틴으로 1초마다 갱신해서 멈췄을 때, 그 방향에 맞춰 대기 상태를 만듬.
+    /// </summary>
+    private void PlayerDirectionCoroutine()
+    {
+        if (_currentMovement.magnitude > 0 && _updateDirectionCoroutine == null)
+        {
+            _updateDirectionCoroutine = StartCoroutine(UpdateDirectionRoutine());
+        }
+    }
+    
+    private IEnumerator UpdateDirectionRoutine()
+    {
+        while (true)
+        {
+            _currentDirection = new Vector3(_currentMovement.x, _currentMovement.y, 0f);
+            if(_currentDirection.magnitude > 0f )
+            {
+                IndicatorRotation = Mathf.Atan2(_currentDirection.y, _currentDirection.x) * Mathf.Rad2Deg;
+                OnUpdateDirection?.Invoke(IndicatorRotation);
+            }
+
+            // 0.2초 간격으로 갱신
+            yield return new WaitForSeconds(_intevalCoroutineTime);
+        }
+    }
+
+    private void CurrentDirection(Vector2 MovementInput)
+    {
+        _currentMovement = MovementInput.normalized;
+    }
+}
+
+          </code></pre>
+
+</body>
+</html>
