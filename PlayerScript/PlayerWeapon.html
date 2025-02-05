@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayerWeapon Script</title> //스크립트 이름
+    
+    <!-- Prism.js 스타일 및 라이브러리 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            padding: 20px;
+        }
+        pre {
+            border-radius: 8px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Player.cs</h2>
+
+    <pre><code class="language-csharp">
+
+using System;
+using UnityEngine;
+
+public class PlayerWeapon : MonoBehaviour, IPlayerControlModule
+{
+    public enum PlayerWeaponState
+    {
+        Normal,
+        Spear,
+        Gun
+    }
+
+    /// <summary>
+    /// 무기 상태 변할 때 반응
+    /// </summary>
+    public event Action<PlayerWeaponState> OnWeaponStateChanged;
+
+    private PlayerWeaponState _currentPlayerWeaponState = PlayerWeaponState.Normal;
+
+    /// <summary>
+    /// 현재 플레이어 노말, 근접 무기, 원거리 무기 상태
+    /// </summary>
+    public PlayerWeaponState CurrentPlayerWeaponState
+    {
+        get => _currentPlayerWeaponState;
+        private set
+        {
+            if (_currentPlayerWeaponState == value) return;
+            _currentPlayerWeaponState = value;
+            OnWeaponStateChanged?.Invoke(_currentPlayerWeaponState);
+        }
+    }
+
+    private void OnEnable()
+    {
+        InputHandler.Instance.OnWeaponChangeInput += PlayerChangeWeaponState;
+    }
+
+    private void OnDisable()
+    {
+        InputHandler.Instance.OnWeaponChangeInput -= PlayerChangeWeaponState;
+    }
+
+    private void Awake()
+    {
+        
+    }
+
+    public void UpdateControl()
+    {
+
+    }
+
+    //TODO: 아직 아이템 UI 구현이 안되어있어서 아이템과 연동 해야함. 아직 숫자키로 입력
+    /// <summary>
+    /// 테스트용. 플레이어 무기 상태에 따라 애니메이션이 달라짐.
+    /// </summary>
+    /// <param name="WeaponTestValue"></param>
+    public void PlayerChangeWeaponState(int WeaponTestValue)
+    {
+        if ((int) CurrentPlayerWeaponState == WeaponTestValue) return;
+        
+        CurrentPlayerWeaponState = (PlayerWeaponState) WeaponTestValue;
+        //_playerAni.UpdateWeaponMotion(CurrentPlayerWeaponState);
+    }
+}
+
+
+          </code></pre>
+
+</body>
+</html>
