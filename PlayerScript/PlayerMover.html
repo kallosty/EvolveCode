@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayerMover Script</title>
+    
+    <!-- Prism.js 스타일 및 라이브러리 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            padding: 20px;
+        }
+        pre {
+            border-radius: 8px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Player.cs</h2>
+
+    <pre><code class="language-csharp">
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerMover : MonoBehaviour, IPlayerControlModule
+{
+    [SerializeField] private float walkSpeed = 2.0f;
+    [SerializeField] private float runSpeed = 4.0f;
+    [SerializeField] private float dashSpeed = 6.0f;
+
+    private Vector2 playerVector = Vector2.zero;
+    private bool _isRunning = false;
+    private bool _isDashing = false;
+
+    private void OnEnable()
+    {
+        InputHandler.Instance.OnMovementInput += PlayerVector;
+        InputHandler.Instance.OnRunInput += PlayerRunInput;
+        InputHandler.Instance.OnDashInput += PlayerDashInput;
+    }
+
+    private void OnDisable()
+    {
+        InputHandler.Instance.OnMovementInput -= PlayerVector;
+        InputHandler.Instance.OnRunInput -= PlayerRunInput;
+        InputHandler.Instance.OnDashInput -= PlayerDashInput;
+    }
+
+    public void UpdateControl()
+    {
+        PlayerMovement(playerVector,_isRunning,_isDashing);
+    }
+
+
+    /// <summary>
+    /// Player의 물리적인 움직임을 담당
+    /// </summary>
+    /// <param name="direction"></param>
+    /// <param name="isRunning"></param>
+    /// <param name="isDashing"></param>
+    public void PlayerMovement(Vector3 direction, bool isRunning, bool isDashing)
+    {
+        float speed;
+        if(isDashing) speed = dashSpeed;
+        else speed = isRunning ? runSpeed : walkSpeed;
+
+        Player.Instance.transform.position += new Vector3(direction.x,direction.y,0) * speed * Time.deltaTime;
+    }
+
+    private void PlayerVector(Vector2 movementInput)
+    {
+        playerVector = movementInput;
+    }
+
+    private void PlayerRunInput(bool isRunning)
+    {
+        _isRunning = isRunning;
+    }
+
+    private void PlayerDashInput()
+    {
+        _isDashing = true;
+        StartCoroutine(ResetDash());
+    }
+
+    private IEnumerator ResetDash()
+    {
+        yield return new WaitForSeconds(0.5f);
+        _isDashing = false;
+    }
+}
+
+
+          </code></pre>
+
+</body>
+</html>
