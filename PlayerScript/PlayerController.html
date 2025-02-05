@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayerController Script</title>
+    
+    <!-- Prism.js 스타일 및 라이브러리 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            padding: 20px;
+        }
+        pre {
+            border-radius: 8px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Player.cs</h2>
+
+    <pre><code class="language-csharp">
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerController : MonoBehaviour
+{
+    //IPlayerControlModule을 가지고 있는 자식객체의 모듈들을  받기 위한 List
+    [SerializeField] private List<IPlayerControlModule> _modules = new List<IPlayerControlModule>();
+
+    public void Initialize()
+    {
+        _modules.AddRange(GetComponentsInChildren<IPlayerControlModule>());
+        ConnectWithChildren();
+    }
+
+    public void HandleUpdate()
+    {
+        foreach (var module in _modules)
+        {
+            module.UpdateControl();
+        }
+    }
+
+    private  void ConnectWithChildren()
+    {
+        ConnectMotionToAni();
+        ConnectWeaponStateToAni();
+        ConnectDirectionToAni();
+    }
+
+    /// <summary>
+    /// Player 모션과 Ani를 연결
+    /// </summary>
+    private void ConnectMotionToAni()
+    {
+        //_modules 리스트에서 PlayerMotion과 PlayerAni를 찾고 이벤트 연결
+        var playerMotion = _modules.Find(module => module is PlayerMotion) as PlayerMotion;
+        var playerAni = _modules.Find(module => module is PlayerAni) as PlayerAni;
+
+        playerMotion.OnMotionChanged += playerAni.UpdateAnimationState;
+    }
+
+    /// <summary>
+    /// Player 모션과 Ani의 연결 해제
+    /// </summary>
+    private void DisconnectMotionFromAni()
+    {
+        var playerMotion = _modules.Find(module => module is PlayerMotion) as PlayerMotion;
+        var playerAni = _modules.Find(module => module is PlayerAni) as PlayerAni;
+
+        playerMotion.OnMotionChanged -= playerAni.UpdateAnimationState;
+    }
+
+    private void ConnectWeaponStateToAni()
+    {
+        var playerWeaponState = _modules.Find(module => module is PlayerWeapon) as PlayerWeapon;
+        var playerAni = _modules.Find(module => module is PlayerAni) as PlayerAni;
+
+        playerWeaponState.OnWeaponStateChanged += playerAni.UpdateWeaponMotion;
+    }
+
+    private void DisconnectWeaponStateToAni()
+    {
+        var playerWeaponState = _modules.Find(module => module is PlayerWeapon) as PlayerWeapon;
+        var playerAni = _modules.Find(module => module is PlayerAni) as PlayerAni;
+
+        playerWeaponState.OnWeaponStateChanged -= playerAni.UpdateWeaponMotion;
+    }
+
+    private void ConnectDirectionToAni()
+    {
+        var playerAni = _modules.Find(module => module is PlayerAni) as PlayerAni;
+        var playerDirection = _modules.Find(module => module is PlayerDirection) as PlayerDirection;
+
+        playerDirection.OnUpdateDirection += playerAni.UpdateAnimationIdleDirection;
+    }
+
+    private void DisconnectDirectionToAni()
+    {
+        var playerAni = _modules.Find(module => module is PlayerAni) as PlayerAni;
+        var playerDirection = _modules.Find(module => module is PlayerDirection) as PlayerDirection;
+
+        playerDirection.OnUpdateDirection -= playerAni.UpdateAnimationIdleDirection;
+    }
+
+    private void OnDestroy()
+    {
+        DisconnectMotionFromAni();
+        DisconnectWeaponStateToAni();
+        DisconnectDirectionToAni();
+    }
+}
+
+
+          </code></pre>
+
+</body>
+</html>
